@@ -1,0 +1,20 @@
+# binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+#Test binary
+*.test
+
+#output of go coverage tool
+*.out
+
+#go workspace files
+*go.work
+*go.work.sum
+
+#Misc
+.ds_store
+terminotes
