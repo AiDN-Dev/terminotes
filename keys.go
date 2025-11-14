@@ -46,12 +46,12 @@ func newKeyMap() keyMap {
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Quit, k.Switch, k.New, k.Save, k.Top, k.Enter}
+	return []key.Binding{k.Quit, k.Switch, k.New, k.Delete, k.Save, k.Top, k.Enter}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.New, k.Save, k.Enter},  //First column
-		{k.Switch, k.Top, k.Quit}, //Second Column
+		{k.New, k.Delete, k.Save},          //First column
+		{k.Enter, k.Switch, k.Top, k.Quit}, //Second Column
 	}
 }
