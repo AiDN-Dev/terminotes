@@ -75,6 +75,19 @@ type item struct {
 	title, desc string
 }
 
+func refreshList() ([]list.Item, []fs.DirEntry, error) {
+	files, err := os.ReadDir("./notes")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	items := make([]list.Item, len(files))
+	for i, file := range files {
+		items[i] = item{title: file.Name(), desc: ""}
+	}
+	return items, files, nil
+}
+
 func (i item) Title() string       { return i.title }
 func (i item) Description() string { return i.desc }
 func (i item) FilterValue() string { return i.title }
@@ -124,8 +137,52 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textarea.SetValue("")
 				m.status = "New note: " + filename
 				m.listFocused = false
+
+				// create the file on the filesystem
+				if err := os.MkdirAll("./notes", 0755); err != nil {
+					m.status = "Error creating directory: " + err.Error()
+					return m, nil
+				}
+				err := os.WriteFile("./notes/"+m.currentFile, []byte(""), 0644) //create with empty content
+
+				if err != nil {
+					m.status = "Error creating file: " + err.Error()
+				} else {
+					items, files, err := refreshList()
+					if err != nil {
+						m.status = "Error refreshing list: " + err.Error()
+					} else {
+						m.list.SetItems(items)
+						m.files = files
+					}
+				}
+
 				cmd = m.textarea.Focus()
 				cmds = append(cmds, cmd)
+				return m, tea.Batch(cmds...)
+			case key.Matches(msg, m.keys.Delete):
+				selectedItem, ok := m.list.SelectedItem().(item)
+				if ok {
+					// If the delted note is the one curerntly open clear the text textarea
+					if selectedItem.title == m.currentFile {
+						m.textarea.SetValue("")
+						m.currentFile = ""
+					}
+
+					err := os.Remove("./notes/" + selectedItem.title)
+					if err != nil {
+						m.status = "Error deleting file: " + err.Error()
+					} else {
+						m.status = "Deleted: " + selectedItem.title
+						items, files, err := refreshList()
+						if err != nil {
+							m.status = "Error refreshing list: " + err.Error()
+						} else {
+							m.list.SetItems(items)
+							m.files = files
+						}
+					}
+				}
 			case key.Matches(msg, m.keys.Enter):
 				selectedItem, ok := m.list.SelectedItem().(item)
 				if ok {
@@ -155,13 +212,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.status = "Error saving file: " + err.Error()
 					} else {
 						m.status = "Saved: " + m.currentFile
+						items, files, err := refreshList()
+						if err != nil {
+							m.status = "Error refreshing list: " + err.Error()
+						} else {
+							m.list.SetItems(items)
+							m.files = files
+						}
 					}
 				} else {
 					m.status = "Cannot Save: focus the textarea and try to open a file first."
 				}
 			case key.Matches(msg, m.keys.Top):
 				m.textarea.CursorStart()
-				m.status = "Movd cursor to Top"
+				m.status = "Moved cursor to Top"
 			}
 		}
 	}
