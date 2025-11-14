@@ -28,7 +28,7 @@ func newKeyMap() keyMap {
 		),
 		Quit: key.NewBinding(
 			key.WithKeys("q", "ctrl+c"),
-			key.WithHelp("q/ctrl+x", "Quit Terminotes"),
+			key.WithHelp("q/ctrl+c", "Quit Terminotes"),
 		),
 		Switch: key.NewBinding(
 			key.WithKeys("tab"),
