@@ -246,10 +246,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.Delete):
 				selectedItem, ok := m.list.SelectedItem().(item)
 				if ok {
+					// If the delted note is the one curerntly open clear the text textarea
 					if selectedItem.title == m.currentFile {
 						m.textarea.SetValue("")
 						m.currentFile = ""
 					}
+
 					err := os.Remove("./notes/" + selectedItem.title)
 					if err != nil {
 						m.status = "Error deleting file: " + err.Error()
