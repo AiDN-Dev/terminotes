@@ -58,8 +58,8 @@ func containerModel() model {
 	styles := NewStyles(defaultTheme)
 
 	settingsItems := make([]list.Item, 0, len(loadThemes))
-	for themeName := range loadThemes {
-		settingsItems = append(settingsItems, item{title: themeName, desc: ""})
+	for _, theme := range loadThemes {
+		settingsItems = append(settingsItems, item{title: theme.Name, desc: theme.FileName})
 	}
 
 	settingsDelegate := list.NewDefaultDelegate()
@@ -154,6 +154,10 @@ func loadThemes() (map[string]Theme, error) {
 				fmt.Printf("Error parsing theme file %s: %v\n", filePath, err)
 				continue
 			}
+			theme.FileName = file.Name()
+			if theme.Name == "" {
+				theme.Name = strings.TrimSuffix(file.Name(), ".json")
+			}
 			themes[file.Name()] = theme
 		}
 	}
@@ -207,12 +211,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.Enter):
 				selectedItem, ok := m.settingsList.SelectedItem().(item)
 				if ok {
-					themeName := selectedItem.title
-					if selectedTheme, found := m.themes[themeName]; found {
+					themeFileName := selectedItem.desc
+					if selectedTheme, found := m.themes[themeFileName]; found {
 						m.styles = NewStyles(selectedTheme)
-						m.status = fmt.Sprintf("Theme changed to %s", themeName)
+						m.status = fmt.Sprintf("Theme changed to %s", selectedTheme.Name)
 					} else {
-						m.status = fmt.Sprintf("Error: Theme %s not found", themeName)
+						m.status = fmt.Sprintf("Error: Theme %s not found", themeFileName)
 					}
 				}
 				m.appState = viewNotes
