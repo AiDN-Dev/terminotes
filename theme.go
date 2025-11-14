@@ -66,7 +66,8 @@ type Styles struct {
 	ListTitle      lipgloss.Style
 	ListItem       lipgloss.Style
 	ListItemActive lipgloss.Style
-	Overlay        lipgloss.Style
+	ActivePane     lipgloss.Style
+	InactivePane   lipgloss.Style
 }
 
 func NewStyles() Styles {
@@ -88,12 +89,19 @@ func NewStyles() Styles {
 			Foreground(lipgloss.Color(CatppucinMocha.Sapphire)).
 			Padding(0, 1),
 		ListItem: lipgloss.NewStyle().
-			Padding(0, 1),
+			Padding(0, 1).
+			Align(lipgloss.Center),
 		ListItemActive: lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(lipgloss.Color(CatppucinMocha.Mauve)).
-			Foreground(lipgloss.Color(CatppucinMocha.Base)),
-		Overlay: lipgloss.NewStyle().
-			Background(lipgloss.Color(CatppucinMocha.Surface0)),
+			Foreground(lipgloss.Color(CatppucinMocha.Base)).
+			Align(lipgloss.Center),
+
+		ActivePane: lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color(CatppucinMocha.Mauve)),
+		InactivePane: lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color(CatppucinMocha.Overlay0)),
 	}
 }

@@ -53,13 +53,8 @@ func containerModel() model {
 	}
 
 	//Setup the list
-	d := list.NewDefaultDelegate()
-	d.Styles.NormalTitle = styles.ListItem
-	d.Styles.NormalDesc = styles.ListItem
-	d.Styles.SelectedTitle = styles.ListItemActive
-	d.Styles.SelectedDesc = styles.ListItemActive
-
-	l := list.New(items, d, 0, 0)
+	delegate := newItemDelegate(styles)
+	l := list.New(items, delegate, 0, 0)
 	l.Title = "Notes"
 	l.Styles.Title = styles.ListTitle
 	l.SetShowHelp(false) //Using my own help view
@@ -215,9 +210,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		helpView := m.help.View(m.keys)
 		helpHeight := lipgloss.Height(helpView)
 
-		m.list.SetSize(m.width/3, m.height-statusBarHeight-helpHeight)
-		m.textarea.SetWidth(m.width * 2 / 3)
-		m.textarea.SetHeight(m.height - statusBarHeight - helpHeight)
+		const listWidth = 25
+
+		paneStyle := m.styles.ActivePane
+		borderWidth := paneStyle.GetHorizontalFrameSize()
+		borderHeight := paneStyle.GetVerticalBorderSize()
+
+		m.list.SetSize(listWidth-borderWidth, m.height-statusBarHeight-helpHeight-borderHeight)
+
+		textareaWidth := m.width - m.list.Width() - borderWidth*2
+		m.textarea.SetWidth(textareaWidth)
+		m.textarea.SetHeight(m.height - statusBarHeight - helpHeight - borderHeight)
 
 	case tea.KeyMsg:
 		switch {
@@ -336,7 +339,22 @@ func (m model) View() string {
 
 	helpView := m.help.View(m.keys)
 
-	mainContent := lipgloss.JoinHorizontal(lipgloss.Top, m.list.View(), m.textarea.View())
+	var listStyle, textareaStyle lipgloss.Style
+
+	if m.listFocused {
+		listStyle = m.styles.ActivePane
+		textareaStyle = m.styles.InactivePane
+	} else {
+		listStyle = m.styles.InactivePane
+		textareaStyle = m.styles.ActivePane
+	}
+
+	listStyle = listStyle.Width(m.list.Width())
+
+	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
+		listStyle.Render(m.list.View()),
+		textareaStyle.Render(m.textarea.View()),
+	)
 	appView := lipgloss.JoinVertical(lipgloss.Left, mainContent, statusBar, helpView)
 
 	if m.inputting {
