@@ -3,13 +3,14 @@ package main
 import "github.com/charmbracelet/bubbles/key"
 
 type keyMap struct {
-	New    key.Binding
-	Delete key.Binding
-	Save   key.Binding
-	Quit   key.Binding
-	Switch key.Binding
-	Top    key.Binding
-	Enter  key.Binding
+	New      key.Binding
+	Delete   key.Binding
+	Save     key.Binding
+	Quit     key.Binding
+	Switch   key.Binding
+	Top      key.Binding
+	Enter    key.Binding
+	Settings key.Binding
 }
 
 func newKeyMap() keyMap {
@@ -42,6 +43,10 @@ func newKeyMap() keyMap {
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "Select note"),
 		),
+		Settings: key.NewBinding(
+			key.WithKeys("c"),
+			key.WithHelp("c", "Configure"),
+		),
 	}
 }
 
@@ -53,5 +58,6 @@ func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.New, k.Delete, k.Save},          //First column
 		{k.Enter, k.Switch, k.Top, k.Quit}, //Second Column
+		{k.Settings},                       //Third Column
 	}
 }

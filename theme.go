@@ -2,7 +2,7 @@ package main
 
 import "github.com/charmbracelet/lipgloss"
 
-var CatppucinMocha = struct {
+type Theme struct {
 	Rosewater string
 	Flamingo  string
 	Pink      string
@@ -29,33 +29,6 @@ var CatppucinMocha = struct {
 	Base      string
 	Mantle    string
 	Crust     string
-}{
-	Rosewater: "#F5E0DC",
-	Flamingo:  "#F2CDCD",
-	Pink:      "#F5C2E7",
-	Mauve:     "#CBA6F7",
-	Red:       "#F38BA8",
-	Maroon:    "#EBA0AC",
-	Peach:     "#FAB387",
-	Yellow:    "#F9E2AF",
-	Green:     "#A6E3A1",
-	Teal:      "#94E2D5",
-	Sky:       "#89DCEB",
-	Sapphire:  "#74C7EC",
-	Blue:      "#89B4FA",
-	Lavender:  "#B4BEFE",
-	Text:      "#CDD6F4",
-	Subtext1:  "#BAC2DE",
-	Subtext0:  "#A6ADC8",
-	Overlay2:  "#9399B2",
-	Overlay1:  "#7F849C",
-	Overlay0:  "#6C7086",
-	Surface2:  "#585B70",
-	Surface1:  "#454574A",
-	Surface0:  "#313244",
-	Base:      "#1E1E2E",
-	Mantle:    "#181825",
-	Crust:     "#11111B",
 }
 
 type Styles struct {
@@ -70,38 +43,47 @@ type Styles struct {
 	InactivePane   lipgloss.Style
 }
 
-func NewStyles() Styles {
-	return Styles{
-		StatusBar: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(CatppucinMocha.Text)).
-			Background(lipgloss.Color(CatppucinMocha.Surface0)),
-		Modal: lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			Background(lipgloss.Color(CatppucinMocha.Mauve)).
-			Padding(1, 2).
-			Background(lipgloss.Color(CatppucinMocha.Base)).
-			Foreground(lipgloss.Color(CatppucinMocha.Text)),
-		Prompt: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(CatppucinMocha.Subtext0)),
-		TextInput: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(CatppucinMocha.Peach)),
-		ListTitle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(CatppucinMocha.Sapphire)).
-			Padding(0, 1),
-		ListItem: lipgloss.NewStyle().
-			Padding(0, 1).
-			Align(lipgloss.Center),
-		ListItemActive: lipgloss.NewStyle().
-			Padding(0, 1).
-			Background(lipgloss.Color(CatppucinMocha.Mauve)).
-			Foreground(lipgloss.Color(CatppucinMocha.Base)).
-			Align(lipgloss.Center),
+func NewStyles(theme Theme) Styles {
+	s := Styles{}
 
-		ActivePane: lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(CatppucinMocha.Mauve)),
-		InactivePane: lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(CatppucinMocha.Overlay0)),
-	}
+	s.StatusBar = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(theme.Text)).
+		Background(lipgloss.Color(theme.Surface0))
+
+	s.Modal = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color(theme.Mauve)).
+		Padding(1, 2).
+		Background(lipgloss.Color(theme.Base)).
+		Foreground(lipgloss.Color(theme.Text))
+
+	s.Prompt = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(theme.Subtext0))
+
+	s.TextInput = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(theme.Peach))
+
+	s.ListTitle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(theme.Sapphire)).
+		Padding(0, 1)
+
+	s.ListItem = lipgloss.NewStyle().
+		Padding(0, 1).
+		Align(lipgloss.Center)
+
+	s.ListItemActive = lipgloss.NewStyle().
+		Padding(0, 1).
+		Background(lipgloss.Color(theme.Mauve)).
+		Foreground(lipgloss.Color(theme.Base)).
+		Align(lipgloss.Center)
+
+	s.ActivePane = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color(theme.Mauve))
+
+	s.InactivePane = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color(theme.Overlay0))
+
+	return s
 }
