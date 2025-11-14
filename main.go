@@ -31,6 +31,7 @@ type model struct {
 	textInput    textinput.Model //for file name input
 	inputting    bool            //true if currently askign for a file Name
 	InputPurpose string          // "New" or "Save"
+	styles       Styles
 }
 
 func (m model) Init() tea.Cmd {
@@ -38,6 +39,7 @@ func (m model) Init() tea.Cmd {
 }
 
 func containerModel() model {
+	styles := NewStyles()
 	//Read files from the current directory
 	files, err := os.ReadDir("./notes")
 	if err != nil {
@@ -51,8 +53,15 @@ func containerModel() model {
 	}
 
 	//Setup the list
-	l := list.New(items, list.NewDefaultDelegate(), 0, 0)
+	d := list.NewDefaultDelegate()
+	d.Styles.NormalTitle = styles.ListItem
+	d.Styles.NormalDesc = styles.ListItem
+	d.Styles.SelectedTitle = styles.ListItemActive
+	d.Styles.SelectedDesc = styles.ListItemActive
+
+	l := list.New(items, d, 0, 0)
 	l.Title = "Notes"
+	l.Styles.Title = styles.ListTitle
 	l.SetShowHelp(false) //Using my own help view
 
 	//setup the text area
@@ -69,7 +78,7 @@ func containerModel() model {
 	ti.Placeholder = "Enter filename (leave blank for default)"
 	ti.CharLimit = 50
 	ti.Width = 40
-	ti.Prompt = "Filename: "
+	ti.Prompt = ""
 
 	return model{
 		list:         l,
@@ -83,6 +92,7 @@ func containerModel() model {
 		textInput:    ti,
 		inputting:    false, //not inputting initially
 		InputPurpose: "",    //no purpose initially
+		styles:       styles,
 	}
 }
 
@@ -320,11 +330,7 @@ func (m model) View() string {
 	}
 
 	//Create the status bar
-	statusBar := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFF")).
-		Background(lipgloss.Color("#5C5C5C")).
-		Padding(0, 1).
-		Render(m.status)
+	statusBar := m.styles.StatusBar.Padding(0, 1).Width(m.width).Render(m.status)
 
 	helpView := m.help.View(m.keys)
 
@@ -332,28 +338,16 @@ func (m model) View() string {
 	appView := lipgloss.JoinVertical(lipgloss.Left, mainContent, statusBar, helpView)
 
 	if m.inputting {
-		var (
-			modalStyle = lipgloss.NewStyle().
-					Border(lipgloss.RoundedBorder()).
-					BorderForeground(lipgloss.Color("62")).
-					Padding(1, 2).
-					Background(lipgloss.Color("#000000")).
-					Foreground(lipgloss.Color("#FFFFFF"))
-
-			promptStyle = lipgloss.NewStyle().
-					Foreground(lipgloss.Color("240"))
-		)
-
-		m.textInput.PromptStyle = promptStyle
-		m.textInput.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+		m.textInput.PromptStyle = m.styles.Prompt
+		m.textInput.TextStyle = m.styles.TextInput
 
 		inputBoxContent := lipgloss.JoinVertical(lipgloss.Left,
 			"Enter filename: ",
 			m.textInput.View(),
-			promptStyle.Render("Press Enter to confirm, Esc to cancel"),
+			m.styles.Prompt.Render("Press Enter to confirm, Esc to cancel."),
 		)
 
-		inputBox := modalStyle.Render(inputBoxContent)
+		inputBox := m.styles.Modal.Render(inputBoxContent)
 
 		return lipgloss.Place(
 			m.width,
