@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
-
-	//"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -24,6 +24,8 @@ type model struct {
 	width       int
 	height      int
 	quitting    bool
+	keys        keyMap
+	help        help.Model
 }
 
 func (m model) Init() tea.Cmd {
@@ -46,10 +48,15 @@ func containerModel() model {
 	//Setup the list
 	l := list.New(items, list.NewDefaultDelegate(), 0, 0)
 	l.Title = "Notes"
+	l.SetShowHelp(false) //Using my own help view
 
 	//setup the text area
 	ta := textarea.New()
 	ta.Placeholder = "Select a note to view and edit its contents"
+
+	keys := newKeyMap()
+	help := help.New()
+	help.ShowAll = true
 
 	return model{
 		list:        l,
@@ -58,6 +65,8 @@ func containerModel() model {
 		listFocused: true, //Start with list focused
 		currentFile: "",
 		status:      "Select a file to view and edit.",
+		keys:        keys,
+		help:        help,
 	}
 }
 
@@ -81,13 +90,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		statusBarHeight := 1
 
+		//Calculate help height
+		m.help.Width = m.width
+		helpView := m.help.View(m.keys)
+		helpHeight := lipgloss.Height(helpView)
+
 		//Update list and viewport sizes
-		m.list.SetSize(m.width/3, m.height-statusBarHeight)
+		m.list.SetSize(m.width/3, m.height-statusBarHeight-helpHeight)
 		m.textarea.SetWidth(m.width * 2 / 3)
-		m.textarea.SetHeight(m.height - statusBarHeight)
+		m.textarea.SetHeight(m.height - statusBarHeight - helpHeight)
 
 	case tea.KeyMsg:
-		if msg.String() == "tab" {
+		switch {
+		case key.Matches(msg, m.keys.Quit):
+			m.quitting = true
+			return m, tea.Quit
+		case key.Matches(msg, m.keys.Switch):
 			m.listFocused = !m.listFocused
 			if m.listFocused {
 				m.textarea.Blur()
@@ -98,24 +116,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 		}
 
-		// Handle other key presses
-		switch msg.String() {
-		case "ctrl+c", "q":
-			m.quitting = true
-			return m, tea.Quit
-		case "ctrl+n":
-			filename := "note-" + time.Now().Format("2006-01-02-15-04-05") + ".md"
-			m.currentFile = filename
-			m.textarea.SetValue("")
-			m.status = "New note: " + filename
-			m.listFocused = false
-			cmd = m.textarea.Focus()
-			cmds = append(cmds, cmd)
-		case "ctrl+t":
-			m.textarea.CursorStart()
-			m.status = "Moved cursor to top"
-		case "enter":
-			if m.listFocused {
+		if m.listFocused {
+			switch {
+			case key.Matches(msg, m.keys.New):
+				filename := "note-" + time.Now().Format("2006-01-02-15-04-05") + ".md"
+				m.currentFile = filename
+				m.textarea.SetValue("")
+				m.status = "New note: " + filename
+				m.listFocused = false
+				cmd = m.textarea.Focus()
+				cmds = append(cmds, cmd)
+			case key.Matches(msg, m.keys.Enter):
 				selectedItem, ok := m.list.SelectedItem().(item)
 				if ok {
 					m.currentFile = selectedItem.title
@@ -124,27 +135,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.status = "Error reading file: " + err.Error()
 					} else {
 						m.textarea.SetValue(string(content))
-						m.textarea.CursorStart() // Sets the cursor to the start of the file
-						m.status = "Editing " + m.currentFile
+						m.textarea.CursorStart()
+						m.status = "Editing: " + m.currentFile
 					}
 				}
 			}
-		case "ctrl+s":
-			if !m.listFocused && m.currentFile != "" {
-				//create the notes directory if it exists
-				if err := os.MkdirAll("./notes", 0755); err != nil {
-					m.status = "Error creating director: " + err.Error()
-					return m, nil
-				}
+		} else {
+			switch {
+			case key.Matches(msg, m.keys.Save):
+				if m.currentFile != "" {
+					//Create notes directory if it exists
+					if err := os.MkdirAll("./notes", 0755); err != nil {
+						m.status = "Error creating directory: " + err.Error()
+						return m, nil
+					}
 
-				err := os.WriteFile("./notes/"+m.currentFile, []byte(m.textarea.Value()), 0644)
-				if err != nil {
-					m.status = "Error saving file: " + err.Error()
+					err := os.WriteFile("./notes/"+m.currentFile, []byte(m.textarea.Value()), 0644)
+					if err != nil {
+						m.status = "Error saving file: " + err.Error()
+					} else {
+						m.status = "Saved: " + m.currentFile
+					}
 				} else {
-					m.status = "Saved: " + m.currentFile
+					m.status = "Cannot Save: focus the textarea and try to open a file first."
 				}
-			} else {
-				m.status = "Cannot Save: focus the textarea and try to open a file first."
+			case key.Matches(msg, m.keys.Top):
+				m.textarea.CursorStart()
+				m.status = "Movd cursor to Top"
 			}
 		}
 	}
@@ -171,9 +188,11 @@ func (m model) View() string {
 		Padding(0, 1).
 		Render(m.status)
 
+	helpView := m.help.View(m.keys)
+
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top, m.list.View(), m.textarea.View())
 
-	return lipgloss.JoinVertical(lipgloss.Left, mainContent, statusBar)
+	return lipgloss.JoinVertical(lipgloss.Left, mainContent, statusBar, helpView)
 }
 
 func main() {
